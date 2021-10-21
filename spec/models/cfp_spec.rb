@@ -131,25 +131,117 @@ describe Cfp do
   end
 
   describe '#open?' do
-    context 'returns false' do
-      it 'when start and end dates are in the past' do
-        cfp.start_date = Date.current - 3
-        cfp.end_date = Date.current - 1
-        expect(cfp.open?).to eq(false)
+    let(:timezone_minus11) { 'Pacific/Pago_Pago' }
+    let(:timezone_plus14) { 'Pacific/Apia' }
+
+    context 'when server timezone is the same as the conference' do
+      before do
+        Time.zone = timezone_minus11
+        Timecop.freeze(Time.zone.now)
+
+        cfp.program.conference.timezone = timezone_minus11
+
+        @conference_day = Time.now.in_time_zone(cfp.program.conference.timezone).to_date
       end
 
-      it 'when start and end dates are in the future' do
-        cfp.start_date = Date.current + 1
-        cfp.end_date = Date.current + 3
-        expect(cfp.open?).to eq(false)
+      after do
+        Timecop.return
+      end
+
+      context 'when the date is between the cfp range' do
+        before do
+          cfp.start_date = @conference_day
+          cfp.end_date = @conference_day + 1.day
+        end
+
+        it 'returns true' do
+          expect(cfp.open?).to be_truthy
+        end
+      end
+
+      context 'when the date is not between the cfp range' do
+        before do
+          cfp.start_date = @conference_day + 1.day
+          cfp.end_date = @conference_day + 2.days
+        end
+
+        it 'returns false' do
+          expect(cfp.open?).to be_falsy
+        end
       end
     end
 
-    context 'returns true' do
-      it 'when start date is in the past and end date is in the future' do
-        cfp.start_date = Date.current - 1
-        cfp.end_date = Date.current + 1
-        expect(cfp.open?).to eq(true)
+    context 'when server timezone is on behind as the conference' do
+      before do
+        Time.zone = timezone_minus11
+        Timecop.freeze(Time.zone.now)
+
+        cfp.program.conference.timezone = timezone_plus14
+
+        @conference_day = Time.now.in_time_zone(cfp.program.conference.timezone).to_date
+      end
+
+      after do
+        Timecop.return
+      end
+
+      context 'when the date is between the cfp range' do
+        before do
+          cfp.start_date = @conference_day
+          cfp.end_date = @conference_day + 1.day
+        end
+
+        it 'returns true' do
+          expect(cfp.open?).to be_truthy
+        end
+      end
+
+      context 'when the date is not between the cfp range' do
+        before do
+          cfp.start_date = @conference_day + 1.day
+          cfp.end_date = @conference_day + 2.days
+        end
+
+        it 'returns false' do
+          expect(cfp.open?).to be_falsy
+        end
+      end
+    end
+
+    context 'when server timezone is on ahead as the conference' do
+      before do
+        Time.zone = timezone_plus14
+        Timecop.freeze(Time.zone.now)
+
+        cfp.program.conference.timezone = timezone_minus11
+
+        @conference_day = Time.now.in_time_zone(cfp.program.conference.timezone).to_date
+      end
+
+      after do
+        Timecop.return
+      end
+
+      context 'when the date is between the cfp range' do
+        before do
+          cfp.start_date = @conference_day - 1.day
+          cfp.end_date = @conference_day
+        end
+
+        it 'returns true' do
+          expect(cfp.open?).to be_truthy
+        end
+      end
+
+      context 'when the date is not between the cfp range' do
+        before do
+          cfp.start_date = @conference_day - 2.days
+          cfp.end_date = @conference_day - 1.day
+        end
+
+        it 'returns false' do
+          expect(cfp.open?).to be_falsy
+        end
       end
     end
   end
